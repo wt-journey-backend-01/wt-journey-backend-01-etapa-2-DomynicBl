@@ -1,5 +1,3 @@
-// utils/errorHandler.js
-
 /**
  * Envia uma resposta de erro com status 400 (Bad Request).
  * Usado para erros de validação de entrada do usuário.

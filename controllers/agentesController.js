@@ -1,10 +1,30 @@
-// controllers/agentesController.js
-
 const agentesRepository = require('../repositories/agentesRepository');
 const casosRepository = require('../repositories/casosRepository');
 const errorHandler = require('../utils/errorHandler');
 
-// Funções do controlador para gerenciar agentes
+// Função auxiliar para validar os dados de um agente
+function validarDadosAgente(dados) {
+    const errors = {};
+    const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!dados.nome) errors.nome = "O campo 'nome' é obrigatório.";
+    if (!dados.dataDeIncorporacao) {
+        errors.dataDeIncorporacao = "O campo 'dataDeIncorporacao' é obrigatório.";
+    } else if (!dateFormat.test(dados.dataDeIncorporacao)) {
+        errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
+    } else {
+        const dataIncorp = new Date(dados.dataDeIncorporacao);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        if (dataIncorp > hoje) {
+            errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
+        }
+    }
+    if (!dados.cargo) errors.cargo = "O campo 'cargo' é obrigatório.";
+
+    return errors;
+}
+
 function getAllAgentes(req, res) {
     try {
         const allowedParams = ['cargo', 'sort', 'dataDeIncorporacao'];
@@ -17,12 +37,18 @@ function getAllAgentes(req, res) {
 
         let agentes = agentesRepository.findAll();
         const { cargo, sort, dataDeIncorporacao } = req.query;
+        const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
 
         if (cargo) {
             agentes = agentes.filter(agente => agente.cargo.toLowerCase() === cargo.toLowerCase());
         }
         
         if (dataDeIncorporacao) {
+            if (!dateFormat.test(dataDeIncorporacao)) {
+                return errorHandler.sendInvalidParameterError(res, {
+                    dataDeIncorporacao: "O parâmetro 'dataDeIncorporacao' deve seguir o formato 'YYYY-MM-DD'."
+                });
+            }
             agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao);
         }
 
@@ -41,7 +67,6 @@ function getAllAgentes(req, res) {
     }
 }
 
-// Funções CRUD para agentes
 function getAgenteById(req, res) {
     try {
         const { id } = req.params;
@@ -55,40 +80,20 @@ function getAgenteById(req, res) {
     }
 }
 
-// ===== FUNÇÃO POST =====
 function createAgente(req, res) {
     try {
-        const { nome, dataDeIncorporacao, cargo } = req.body;
-        const errors = {};
-        const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
-
-        if (!nome) errors.nome = "O campo 'nome' é obrigatório.";
-        if (!dataDeIncorporacao) {
-            errors.dataDeIncorporacao = "O campo 'dataDeIncorporacao' é obrigatório.";
-        } else if (!dateFormat.test(dataDeIncorporacao)) {
-            errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
-        } else {
-            const dataIncorp = new Date(dataDeIncorporacao);
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0); 
-            if (dataIncorp > hoje) {
-                errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
-            }
-        }
-        if (!cargo) errors.cargo = "O campo 'cargo' é obrigatório.";
-
+        const errors = validarDadosAgente(req.body);
         if (Object.keys(errors).length > 0) {
             return errorHandler.sendInvalidParameterError(res, errors);
         }
 
-        const novoAgente = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+        const novoAgente = agentesRepository.create(req.body);
         res.status(201).json(novoAgente);
     } catch (error) {
         errorHandler.sendInternalServerError(res, error);
     }
 }
 
-// ===== FUNÇÃO PUT =====
 function updateAgente(req, res) {
     try {
         const { id } = req.params;
@@ -100,41 +105,23 @@ function updateAgente(req, res) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
 
-        const { nome, dataDeIncorporacao, cargo } = req.body;
-        const errors = {};
-        const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
-
-        if (!nome) errors.nome = "O campo 'nome' é obrigatório.";
-        if (!dataDeIncorporacao) {
-            errors.dataDeIncorporacao = "O campo 'dataDeIncorporacao' é obrigatório.";
-        } else if (!dateFormat.test(dataDeIncorporacao)) {
-            errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
-        } else {
-            const dataIncorp = new Date(dataDeIncorporacao);
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            if (dataIncorp > hoje) {
-                errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
-            }
-        }
-        if (!cargo) errors.cargo = "O campo 'cargo' é obrigatório.";
-
+        const errors = validarDadosAgente(req.body);
         if (Object.keys(errors).length > 0) {
             return errorHandler.sendInvalidParameterError(res, errors);
         }
 
-        const agenteAtualizado = agentesRepository.update(id, { nome, dataDeIncorporacao, cargo });
+        const agenteAtualizado = agentesRepository.update(id, req.body);
         res.status(200).json(agenteAtualizado);
     } catch (error) {
         errorHandler.sendInternalServerError(res, error);
     }
 }
 
-// ===== FUNÇÃO PATCH =====
 function patchAgente(req, res) {
     try {
         const { id } = req.params;
-        if (!agentesRepository.findById(id)) {
+        const agente = agentesRepository.findById(id);
+        if (!agente) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
         }
         
@@ -175,7 +162,6 @@ function patchAgente(req, res) {
     }
 }
 
-// ===== FUNÇÃO DELETE =====
 function deleteAgente(req, res) {
     try {
         const { id } = req.params;

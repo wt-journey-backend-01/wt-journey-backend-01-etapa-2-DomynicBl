@@ -1,5 +1,3 @@
-// repositories/agentesRepository.js
-
 const { v4: uuidv4 } = require('uuid');
 
 // Simulação de um banco de dados em memória
@@ -15,7 +13,7 @@ let agentes = [
         nome: "Ana Oliveira",
         dataDeIncorporacao: "2015-03-12",
         cargo: "inspetor"
-    }, 
+    },
     {
         id: "a2a7c438-e7b3-4a6a-8b82-9a3b5b4c6d7e",
         nome: "Carlos Silva",
@@ -33,7 +31,7 @@ let agentes = [
         nome: "Roberto Lima",
         dataDeIncorporacao: "2020-05-30",
         cargo: "agente"
-    }, 
+    },
     {
         id: "d1e2f3g4-h5i6-j7k8-l9m0-n1o2p3q4r5s6",
         nome: "Domynic Barros Lima",

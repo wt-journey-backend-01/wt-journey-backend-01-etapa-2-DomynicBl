@@ -1,10 +1,25 @@
-// controllers/casosController.js
-
 const casosRepository = require('../repositories/casosRepository');
 const agentesRepository = require('../repositories/agentesRepository');
 const errorHandler = require('../utils/errorHandler');
 
-// Controlador para gerenciar casos
+// Função auxiliar para validar os dados de um caso (para POST e PUT)
+function validarDadosCaso(dados) {
+    const errors = {};
+
+    if (!dados.titulo) errors.titulo = "O campo 'titulo' é obrigatório.";
+    if (!dados.descricao) errors.descricao = "O campo 'descricao' é obrigatória.";
+    if (!dados.status) {
+        errors.status = "O campo 'status' é obrigatório.";
+    } else if (dados.status !== 'aberto' && dados.status !== 'solucionado') {
+        errors.status = "O campo 'status' pode ser somente 'aberto' ou 'solucionado'.";
+    }
+    if (!dados.agente_id) {
+        errors.agente_id = "O campo 'agente_id' é obrigatório.";
+    }
+    
+    return errors;
+}
+
 function getAllCasos(req, res) {
     try {
         const allowedParams = ['agente_id', 'status', 'q'];
@@ -43,7 +58,6 @@ function getAllCasos(req, res) {
     }
 }
 
-// Funções CRUD para casos
 function getCasoById(req, res) {
     try {
         const { id } = req.params;
@@ -57,40 +71,24 @@ function getCasoById(req, res) {
     }
 }
 
-// ===== FUNÇÃO POST =====
 function createCaso(req, res) {
     try {
-        const { titulo, descricao, status, agente_id } = req.body;
-        const errors = {};
-
-        if (!titulo) errors.titulo = "O campo 'titulo' é obrigatório.";
-        if (!descricao) errors.descricao = "O campo 'descricao' é obrigatória.";
-        if (!status) {
-            errors.status = "O campo 'status' é obrigatório.";
-        } else if (status !== 'aberto' && status !== 'solucionado') {
-            errors.status = "O campo 'status' pode ser somente 'aberto' ou 'solucionado'.";
-        }
-        
-        if (!agente_id) {
-            errors.agente_id = "O campo 'agente_id' é obrigatório.";
-        }
-
+        const errors = validarDadosCaso(req.body);
         if (Object.keys(errors).length > 0) {
             return errorHandler.sendInvalidParameterError(res, errors);
         }
         
-        if (!agentesRepository.findById(agente_id)) {
-            return errorHandler.sendNotFoundError(res, `Agente com id '${agente_id}' não encontrado.`);
+        if (!agentesRepository.findById(req.body.agente_id)) {
+            return errorHandler.sendNotFoundError(res, `Agente com id '${req.body.agente_id}' não encontrado.`);
         }
 
-        const novoCaso = casosRepository.create({ titulo, descricao, status, agente_id });
+        const novoCaso = casosRepository.create(req.body);
         res.status(201).json(novoCaso);
     } catch (error) {
         errorHandler.sendInternalServerError(res, error);
     }
 }
 
-// ===== FUNÇÃO PUT =====
 function updateCaso(req, res) {
     try {
         const { id } = req.params;
@@ -101,38 +99,23 @@ function updateCaso(req, res) {
         if ('id' in req.body) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
-
-        const { titulo, descricao, status, agente_id } = req.body;
-        const errors = {};
-
-        // Validação completa para o PUT
-        if (!titulo) errors.titulo = "O campo 'titulo' é obrigatório.";
-        if (!descricao) errors.descricao = "O campo 'descricao' é obrigatório.";
-        if (!status) {
-            errors.status = "O campo 'status' é obrigatório.";
-        } else if (status !== 'aberto' && status !== 'solucionado') {
-            errors.status = "O campo 'status' pode ser somente 'aberto' ou 'solucionado'.";
-        }
-        if (!agente_id) {
-            errors.agente_id = "O campo 'agente_id' é obrigatório.";
-        }
         
+        const errors = validarDadosCaso(req.body);
         if (Object.keys(errors).length > 0) {
             return errorHandler.sendInvalidParameterError(res, errors);
         }
 
-        if (!agentesRepository.findById(agente_id)) {
-            return errorHandler.sendNotFoundError(res, `Agente com id '${agente_id}' não encontrado.`);
+        if (!agentesRepository.findById(req.body.agente_id)) {
+            return errorHandler.sendNotFoundError(res, `Agente com id '${req.body.agente_id}' não encontrado.`);
         }
         
-        const casoAtualizado = casosRepository.update(id, { titulo, descricao, status, agente_id });
+        const casoAtualizado = casosRepository.update(id, req.body);
         res.status(200).json(casoAtualizado);
     } catch (error) {
         errorHandler.sendInternalServerError(res, error);
     }
 }
 
-// ===== FUNÇÃO PATCH =====
 function patchCaso(req, res) {
     try {
         const { id } = req.params;
@@ -142,7 +125,6 @@ function patchCaso(req, res) {
 
         const dadosParciais = req.body;
         
-        // Validação de corpo de requisição vazio ou inválido para o PATCH
         if (!dadosParciais || typeof dadosParciais !== 'object' || Array.isArray(dadosParciais) || Object.keys(dadosParciais).length === 0) {
             return errorHandler.sendInvalidParameterError(res, { body: "Corpo da requisição para atualização parcial (PATCH) está vazio ou em formato inválido." });
         }
@@ -166,7 +148,6 @@ function patchCaso(req, res) {
     }
 }
 
-//// ===== FUNÇÃO DELETE =====
 function deleteCaso(req, res) {
     try {
         const { id } = req.params;
@@ -180,7 +161,6 @@ function deleteCaso(req, res) {
     }
 }
 
-// ===== FUNÇÃO PARA OBTER AGENTE POR ID DE CASO =====
 function getAgenteByCasoId(req, res) {
     try {
         const { caso_id } = req.params;
@@ -192,6 +172,7 @@ function getAgenteByCasoId(req, res) {
 
         const agente = agentesRepository.findById(caso.agente_id);
         if (!agente) {
+            // Este cenário seria um erro de integridade de dados, mas é bom tratar.
             return errorHandler.sendNotFoundError(res, 'Agente associado ao caso não foi encontrado.');
         }
 

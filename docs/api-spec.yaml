@@ -1,0 +1,151 @@
+openapi: '3.0.0'
+info:
+  title: API do Departamento de Polícia
+  version: '1.0.0'
+  description: API RESTful para gerenciamento de casos e agentes da polícia.
+servers:
+  - url: http://localhost:3000
+    description: Servidor de Desenvolvimento
+tags:
+  - name: Agentes
+    description: Operações para gerenciamento de agentes.
+  - name: Casos
+    description: Operações para gerenciamento de casos policiais.
+paths:
+  /agentes:
+    get:
+      tags: [Agentes]
+      summary: Lista todos os agentes
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Agentes]
+      summary: Cria um novo agente
+      responses:
+        '201':
+          description: Created
+  /agentes/{id}:
+    get:
+      tags: [Agentes]
+      summary: Retorna um agente específico pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    put:
+      tags: [Agentes]
+      summary: Atualiza um agente por completo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    patch:
+      tags: [Agentes]
+      summary: Atualiza um agente parcialmente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [Agentes]
+      summary: Remove um agente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+  /casos:
+    get:
+      tags: [Casos]
+      summary: Lista todos os casos
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Casos]
+      summary: Cria um novo caso
+      responses:
+        '201':
+          description: Created
+  /casos/{id}:
+    get:
+      tags: [Casos]
+      summary: Retorna um caso específico pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    put:
+      tags: [Casos]
+      summary: Atualiza um caso por completo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    patch:
+      tags: [Casos]
+      summary: Atualiza um caso parcialmente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [Casos]
+      summary: Remove um caso
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+  /casos/{caso_id}/agente:
+    get:
+      tags: [Casos]
+      summary: Retorna o agente responsável por um caso
+      parameters:
+        - name: caso_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK

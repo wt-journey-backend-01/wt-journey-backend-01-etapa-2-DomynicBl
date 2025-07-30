@@ -1,19 +1,25 @@
-// server.js
-
-require('dotenv').config(); // Carrega as variáveis do arquivo .env
+require('dotenv').config();
 
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs'); // Importa a nova biblioteca
+const path = require('path'); // Módulo nativo do Node.js para lidar com caminhos
+
 const agentesRouter = require('./routes/agentesRoutes');
 const casosRouter = require('./routes/casosRoutes');
 
 const app = express();
-// Usa a porta do .env ou a porta 3000 como padrão
 const PORT = process.env.PORT || 3000;
 
-// Middleware para interpretar o corpo da requisição como JSON
+// Carrega o arquivo YAML de especificação da API
+const swaggerDocument = YAML.load(path.join(__dirname, './docs/api-spec.yaml'));
+
 app.use(express.json());
 
-// Rotas para os recursos da API
+// Rota para a documentação da API
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Rotas da API
 app.use(agentesRouter);
 app.use(casosRouter);
 
@@ -25,4 +31,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor do Departamento de Polícia rodando em http://localhost:${PORT}`);
+    console.log(`Documentação da API disponível em http://localhost:${PORT}/docs`);
 });

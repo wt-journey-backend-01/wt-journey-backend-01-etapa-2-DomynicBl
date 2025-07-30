@@ -1,5 +1,3 @@
-// repositories/casosRepository.js
-
 const { v4: uuidv4 } = require('uuid');
 
 // Simulação de um banco de dados em memória
@@ -19,18 +17,18 @@ let casos = [
         agente_id: "a2b3c4d5-6789-01ef-ghij-2345678901bc"
     },
     {
-        id: "b2c3d4e5-9012-3456-7890-abcdef123456", 
+        id: "b2c3d4e5-9012-3456-7890-abcdef123456",
         titulo: "Roubo ao Banco Central",
         descricao: "Um grupo armado invadiu o cofre principal durante a madrugada.",
         status: "aberto",
-        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1" 
+        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1"
     },
     {
         id: "c1e3d5a7-8b9a-4f2c-9d6e-1a2b3c4d5e6f",
         titulo: "Desaparecimento Misterioso",
         descricao: "Cientista renomado desaparece de seu laboratório sem deixar rastros.",
         status: "solucionado",
-        agente_id: "a2a7c438-e7b3-4a6a-8b82-9a3b5b4c6d7e" 
+        agente_id: "a2a7c438-e7b3-4a6a-8b82-9a3b5b4c6d7e"
     },
     {
         id: "d1e2f3g4-h5i6-j7k8-l9m0-n1o2p3q4r5s6",

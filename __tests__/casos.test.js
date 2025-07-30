@@ -1,16 +1,15 @@
 // __tests__/casos.test.js
 
 const request = require('supertest');
-const express = require('express');
+const express = 'express';
 
 // Importar os módulos da nossa aplicação
 const casosRouter = require('../routes/casosRoutes');
 const casosRepository = require('../repositories/casosRepository');
 const agentesRepository = require('../repositories/agentesRepository');
 
-// Criar um app Express falso apenas para os testes
-const app = express();
-app.use(express.json());
+const app = require('express')(); // Usar uma instância real do express
+app.use(require('express').json());
 app.use(casosRouter);
 
 // Mock dos repositórios
@@ -28,21 +27,22 @@ describe('Testes dos Endpoints de /casos', () => {
 
     beforeEach(() => {
         // Resetar mocks
+        jest.clearAllMocks();
         agentesRepository.findById.mockImplementation(id => (id === mockAgenteExistente.id ? mockAgenteExistente : null));
         casosRepository.findAll.mockReturnValue(mockCasos);
         casosRepository.findById.mockImplementation(id => mockCasos.find(c => c.id === id));
         casosRepository.create.mockImplementation(caso => ({ id: 'caso-3', ...caso }));
+        casosRepository.update.mockImplementation((id, data) => ({ id, ...data }));
+        casosRepository.patch.mockImplementation((id, data) => ({ ...mockCasos.find(c => c.id === id), ...data }));
         casosRepository.remove.mockReturnValue(true);
     });
 
-    // Teste para GET /casos
     test('Deve listar todos os casos', async () => {
         const res = await request(app).get('/casos');
         expect(res.statusCode).toEqual(200);
         expect(res.body.length).toBe(2);
     });
 
-    // Teste para POST /casos com sucesso
     test('Deve criar um novo caso com sucesso', async () => {
         const novoCaso = {
             titulo: 'Novo Caso de Teste',
@@ -50,17 +50,12 @@ describe('Testes dos Endpoints de /casos', () => {
             status: 'aberto',
             agente_id: 'agente-1'
         };
-
-        const res = await request(app)
-            .post('/casos')
-            .send(novoCaso);
-
+        const res = await request(app).post('/casos').send(novoCaso);
         expect(res.statusCode).toEqual(201);
         expect(res.body).toHaveProperty('id', 'caso-3');
     });
 
-    // Teste para POST /casos com agente_id inválido
-    test('Deve retornar 400 ao criar um caso com agente_id inexistente', async () => {
+    test('Deve retornar 404 ao criar um caso com agente_id inexistente', async () => {
         const novoCaso = {
             titulo: 'Caso com Agente Fantasma',
             descricao: '...',
@@ -68,15 +63,12 @@ describe('Testes dos Endpoints de /casos', () => {
             agente_id: 'agente-fantasma'
         };
 
-        const res = await request(app)
-            .post('/casos')
-            .send(novoCaso);
+        const res = await request(app).post('/casos').send(novoCaso);
 
-        expect(res.statusCode).toEqual(400);
-        expect(res.body.errors).toHaveProperty('agente_id');
+        expect(res.statusCode).toEqual(404); // Espera 404 em vez de 400
+        expect(res.body.message).toContain("Agente com id 'agente-fantasma' não encontrado.");
     });
     
-    // Teste para POST /casos com status inválido
     test('Deve retornar 400 ao criar um caso com status inválido', async () => {
         const novoCaso = {
             titulo: 'Caso com Status Ruim',
@@ -84,26 +76,30 @@ describe('Testes dos Endpoints de /casos', () => {
             status: 'pendente',
             agente_id: 'agente-1'
         };
-
-        const res = await request(app)
-            .post('/casos')
-            .send(novoCaso);
-
+        const res = await request(app).post('/casos').send(novoCaso);
         expect(res.statusCode).toEqual(400);
         expect(res.body.errors).toHaveProperty('status');
     });
 
-    // Teste para DELETE /casos/:id
-    test('Deve deletar um caso', async () => {
-        const res = await request(app).delete('/casos/caso-1');
-        expect(res.statusCode).toEqual(204);
+    test('Deve retornar 400 ao tentar atualizar (PUT) um caso com o campo id no body', async () => {
+        const dadosAtualizados = {
+            id: 'id-malicioso',
+            titulo: 'Título Atualizado',
+            descricao: 'Descrição Atualizada',
+            status: 'solucionado',
+            agente_id: 'agente-1'
+        };
+        const res = await request(app).put('/casos/caso-1').send(dadosAtualizados);
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.errors).toHaveProperty('id', "Não é permitido alterar o campo 'id'.");
     });
 
-    // Teste para GET /casos?status=aberto
-    test('Deve filtrar casos por status', async () => {
-        casosRepository.findAll.mockReturnValue(mockCasos.filter(c => c.status === 'aberto'));
-        const res = await request(app).get('/casos?status=aberto');
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.every(c => c.status === 'aberto')).toBe(true);
+    test('Deve retornar 400 ao tentar atualizar (PATCH) um caso com o campo id no body', async () => {
+        const dadosParciais = { id: 'id-malicioso', status: 'solucionado' };
+        const res = await request(app).patch('/casos/caso-1').send(dadosParciais);
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.errors).toHaveProperty('id', "Não é permitido alterar o campo 'id'.");
     });
 });

@@ -1,13 +1,13 @@
 // controllers/agentesController.js
 
 const agentesRepository = require('../repositories/agentesRepository');
-const casosRepository = require('../repositories/casosRepository'); // Importando o repositório de casos
+const casosRepository = require('../repositories/casosRepository');
 const errorHandler = require('../utils/errorHandler');
 
 // Funções do controlador para gerenciar agentes
 function getAllAgentes(req, res) {
     try {
-        const allowedParams = ['cargo', 'sort'];
+        const allowedParams = ['cargo', 'sort', 'dataDeIncorporacao'];
         const receivedParams = Object.keys(req.query);
         const invalidParams = receivedParams.filter(param => !allowedParams.includes(param));
 
@@ -16,10 +16,15 @@ function getAllAgentes(req, res) {
         }
 
         let agentes = agentesRepository.findAll();
-        const { cargo, sort } = req.query;
+        const { cargo, sort, dataDeIncorporacao } = req.query;
 
         if (cargo) {
             agentes = agentes.filter(agente => agente.cargo.toLowerCase() === cargo.toLowerCase());
+        }
+        
+        // CORREÇÃO 4: Adicionado filtro por data exata
+        if (dataDeIncorporacao) {
+            agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao);
         }
 
         if (sort) {
@@ -63,6 +68,14 @@ function createAgente(req, res) {
             errors.dataDeIncorporacao = "O campo 'dataDeIncorporacao' é obrigatório.";
         } else if (!dateFormat.test(dataDeIncorporacao)) {
             errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
+        } else {
+            // CORREÇÃO 1: Bloquear data futura
+            const dataIncorp = new Date(dataDeIncorporacao);
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+            if (dataIncorp > hoje) {
+                errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
+            }
         }
         if (!cargo) errors.cargo = "O campo 'cargo' é obrigatório.";
 
@@ -77,12 +90,17 @@ function createAgente(req, res) {
     }
 }
 
-// ===== FUNÇÃO ATUALIZAR =====
+// ===== FUNÇÕES DE ATUALIZAÇÃO =====
 function updateAgente(req, res) {
     try {
         const { id } = req.params;
         if (!agentesRepository.findById(id)) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
+        }
+
+        // CORREÇÃO 2: Impedir alteração do ID
+        if ('id' in req.body) {
+            return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
 
         const { nome, dataDeIncorporacao, cargo } = req.body;
@@ -94,6 +112,14 @@ function updateAgente(req, res) {
             errors.dataDeIncorporacao = "O campo 'dataDeIncorporacao' é obrigatório.";
         } else if (!dateFormat.test(dataDeIncorporacao)) {
             errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
+        } else {
+            // CORREÇÃO 1: Bloquear data futura
+            const dataIncorp = new Date(dataDeIncorporacao);
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            if (dataIncorp > hoje) {
+                errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
+            }
         }
         if (!cargo) errors.cargo = "O campo 'cargo' é obrigatório.";
 
@@ -115,13 +141,28 @@ function patchAgente(req, res) {
         if (!agentesRepository.findById(id)) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
         }
+        
+        // CORREÇÃO 2: Impedir alteração do ID
+        if ('id' in req.body) {
+            return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
+        }
 
         const dadosParciais = req.body;
         const errors = {};
         const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
 
-        if (dadosParciais.dataDeIncorporacao && !dateFormat.test(dadosParciais.dataDeIncorporacao)) {
-            errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
+        if (dadosParciais.dataDeIncorporacao) {
+            if (!dateFormat.test(dadosParciais.dataDeIncorporacao)) {
+                errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
+            } else {
+                // CORREÇÃO 1: Bloquear data futura
+                const dataIncorp = new Date(dadosParciais.dataDeIncorporacao);
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                if (dataIncorp > hoje) {
+                    errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
+                }
+            }
         }
 
         if (Object.keys(errors).length > 0) {
@@ -135,16 +176,14 @@ function patchAgente(req, res) {
     }
 }
 
-// ===== FUNÇÃO DELETAR =====
+// ===== FUNÇÃO DE DELEÇÃO =====
 function deleteAgente(req, res) {
     try {
         const { id } = req.params;
-        // 1. Verifica se o agente existe
         if (!agentesRepository.findById(id)) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
         }
 
-        // 2. Verifica se o agente tem casos associados
         const todosOsCasos = casosRepository.findAll();
         const casosDoAgente = todosOsCasos.some(caso => caso.agente_id === id);
 
@@ -154,7 +193,6 @@ function deleteAgente(req, res) {
             });
         }
 
-        // 3. Se não houver casos, remove o agente
         agentesRepository.remove(id);
         res.status(204).send();
     } catch (error) {

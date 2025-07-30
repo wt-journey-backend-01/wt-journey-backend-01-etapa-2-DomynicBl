@@ -5,7 +5,7 @@ npm-debug.log
 yarn-error.log
 pnpm-debug.log
 
-# Ficheiros de ambiente - NUNCA devem ser commitados em projetos reais
+# Ficheiros de ambiente
 .env
 .env.local
 .env.development.local

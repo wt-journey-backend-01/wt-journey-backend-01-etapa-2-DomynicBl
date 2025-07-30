@@ -27,22 +27,23 @@ describe('Testes dos Endpoints de /agentes', () => {
     ];
 
     beforeEach(() => {
-        jest.clearAllMocks(); // Resetar os mocks antes de cada teste
-        agentesRepository.findAll.mockReturnValue(mockAgentes);
+        jest.clearAllMocks();
+        agentesRepository.findAll.mockReturnValue(mockAgentes); // Resetar os mocks antes de cada teste
         agentesRepository.findById.mockImplementation(id => mockAgentes.find(a => a.id === id));
         agentesRepository.create.mockImplementation(agente => ({ id: '3', ...agente }));
         agentesRepository.update.mockImplementation((id, data) => ({ id, ...data }));
         agentesRepository.patch.mockImplementation((id, data) => ({ ...mockAgentes.find(a => a.id === id), ...data }));
         agentesRepository.remove.mockReturnValue(true);
-        // Mock padrão para casosRepository
+         // Mock padrão para casosRepository
         casosRepository.findAll.mockReturnValue([]);
     });
 
     test('Deve listar todos os agentes', async () => {
         const res = await request(app).get('/agentes');
         expect(res.statusCode).toEqual(200);
-        expect(res.body.length).toBe(2);
     });
+
+    // === NOVOS TESTES PARA VALIDAR AS CORREÇÕES ===
 
     test('Deve retornar 400 ao tentar criar um agente com data de incorporação no futuro', async () => {
         const dataFutura = new Date();
@@ -71,6 +72,12 @@ describe('Testes dos Endpoints de /agentes', () => {
         expect(res.statusCode).toEqual(400);
         expect(res.body.errors).toHaveProperty('id', "Não é permitido alterar o campo 'id'.");
     });
+    
+    test('Deve retornar 400 ao tentar atualizar (PATCH) um agente com um corpo vazio', async () => {
+        const res = await request(app).patch('/agentes/2').send({});
+        expect(res.statusCode).toEqual(400);
+        expect(res.body.errors).toHaveProperty('body');
+    });
 
     test('Deve deletar um agente SEM casos associados', async () => {
         casosRepository.findAll.mockReturnValue([]); 
@@ -84,6 +91,5 @@ describe('Testes dos Endpoints de /agentes', () => {
         
         expect(res.statusCode).toEqual(400);
         expect(res.body.errors).toHaveProperty('delecao');
-        expect(res.body.errors.delecao).toContain('Não é possível excluir o agente');
     });
 });

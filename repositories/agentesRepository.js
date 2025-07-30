@@ -37,29 +37,25 @@ let agentes = [
     {
         id: "d1e2f3g4-h5i6-j7k8-l9m0-n1o2p3q4r5s6",
         nome: "Domynic Barros Lima",
-        dataDeIncorporacao: "2025-07-30",
+        dataDeIncorporacao: "2023-07-22",
         cargo: "delegado"
     }
 ];
 
-// Função para encontrar todos os agentes
 function findAll() {
     return agentes;
 }
 
-// Função para encontrar um agente por ID
 function findById(id) {
     return agentes.find(agente => agente.id === id);
 }
 
-// Função para criar um novo agente
 function create(agente) {
     const novoAgente = { id: uuidv4(), ...agente };
     agentes.push(novoAgente);
     return novoAgente;
 }
 
-// Função para atualizar um agente por completo (PUT)
 function update(id, agenteAtualizado) {
     const index = agentes.findIndex(agente => agente.id === id);
     if (index !== -1) {
@@ -69,7 +65,6 @@ function update(id, agenteAtualizado) {
     return null;
 }
 
-// Função para atualizar um agente parcialmente (PATCH)
 function patch(id, dadosParciais) {
     const index = agentes.findIndex(agente => agente.id === id);
     if (index !== -1) {
@@ -79,7 +74,6 @@ function patch(id, dadosParciais) {
     return null;
 }
 
-// Função para deletar um agente por ID
 function remove(id) {
     const index = agentes.findIndex(agente => agente.id === id);
     if (index !== -1) {

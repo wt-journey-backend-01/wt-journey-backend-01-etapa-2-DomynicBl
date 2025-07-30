@@ -57,7 +57,7 @@ function getCasoById(req, res) {
     }
 }
 
-// ===== FUNÇÃO CRIAR =====
+// ===== FUNÇÃO POST =====
 function createCaso(req, res) {
     try {
         const { titulo, descricao, status, agente_id } = req.body;
@@ -90,7 +90,7 @@ function createCaso(req, res) {
     }
 }
 
-// ===== FUNÇÃO ATUALIZAR =====
+// ===== FUNÇÃO PUT =====
 function updateCaso(req, res) {
     try {
         const { id } = req.params;
@@ -98,16 +98,29 @@ function updateCaso(req, res) {
             return errorHandler.sendNotFoundError(res, 'Caso não encontrado.');
         }
 
-        // CORREÇÃO 2: Impedir alteração do ID
         if ('id' in req.body) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
 
         const { titulo, descricao, status, agente_id } = req.body;
-        // ... (lógica de validação similar à de createCaso) ...
-        if (!agente_id) {
-             return errorHandler.sendInvalidParameterError(res, { agente_id: "O campo 'agente_id' é obrigatório." });
+        const errors = {};
+
+        // Validação completa para o PUT
+        if (!titulo) errors.titulo = "O campo 'titulo' é obrigatório.";
+        if (!descricao) errors.descricao = "O campo 'descricao' é obrigatório.";
+        if (!status) {
+            errors.status = "O campo 'status' é obrigatório.";
+        } else if (status !== 'aberto' && status !== 'solucionado') {
+            errors.status = "O campo 'status' pode ser somente 'aberto' ou 'solucionado'.";
         }
+        if (!agente_id) {
+            errors.agente_id = "O campo 'agente_id' é obrigatório.";
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            return errorHandler.sendInvalidParameterError(res, errors);
+        }
+
         if (!agentesRepository.findById(agente_id)) {
             return errorHandler.sendNotFoundError(res, `Agente com id '${agente_id}' não encontrado.`);
         }
@@ -127,16 +140,23 @@ function patchCaso(req, res) {
             return errorHandler.sendNotFoundError(res, 'Caso não encontrado.');
         }
 
-        // CORREÇÃO 2: Impedir alteração do ID
-        if ('id' in req.body) {
+        const dadosParciais = req.body;
+        
+        // Validação de corpo de requisição vazio ou inválido para o PATCH
+        if (!dadosParciais || typeof dadosParciais !== 'object' || Array.isArray(dadosParciais) || Object.keys(dadosParciais).length === 0) {
+            return errorHandler.sendInvalidParameterError(res, { body: "Corpo da requisição para atualização parcial (PATCH) está vazio ou em formato inválido." });
+        }
+
+        if ('id' in dadosParciais) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
 
-        const dadosParciais = req.body;
-        
-        // CORREÇÃO 3: Usar 404 para agente_id inexistente
         if (dadosParciais.agente_id && !agentesRepository.findById(dadosParciais.agente_id)) {
             return errorHandler.sendNotFoundError(res, `Agente com id '${dadosParciais.agente_id}' não encontrado.`);
+        }
+        
+        if (dadosParciais.status && (dadosParciais.status !== 'aberto' && dadosParciais.status !== 'solucionado')) {
+            return errorHandler.sendInvalidParameterError(res, { status: "O campo 'status' pode ser somente 'aberto' ou 'solucionado'." });
         }
 
         const casoAtualizado = casosRepository.patch(id, dadosParciais);
@@ -146,7 +166,7 @@ function patchCaso(req, res) {
     }
 }
 
-// ===== FUNÇÃO PATCH =====
+//// ===== FUNÇÃO DELETE =====
 function deleteCaso(req, res) {
     try {
         const { id } = req.params;
@@ -180,7 +200,6 @@ function getAgenteByCasoId(req, res) {
         errorHandler.sendInternalServerError(res, error);
     }
 }
-
 
 module.exports = {
     getAllCasos,

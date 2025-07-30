@@ -18,8 +18,8 @@ let casos = [
         status: "solucionado",
         agente_id: "a2b3c4d5-6789-01ef-ghij-2345678901bc"
     },
-        {
-        id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
+    {
+        id: "b2c3d4e5-9012-3456-7890-abcdef123456", 
         titulo: "Roubo ao Banco Central",
         descricao: "Um grupo armado invadiu o cofre principal durante a madrugada.",
         status: "aberto",
@@ -55,24 +55,20 @@ let casos = [
     }
 ];
 
-// Função para encontrar todos os casos
 function findAll() {
     return casos;
 }
 
-// Função para encontrar um caso por ID
 function findById(id) {
     return casos.find(caso => caso.id === id);
 }
 
-// Função para criar um novo caso
 function create(caso) {
     const novoCaso = { id: uuidv4(), ...caso };
     casos.push(novoCaso);
     return novoCaso;
 }
 
-// Função para atualizar um caso por completo (PUT)
 function update(id, casoAtualizado) {
     const index = casos.findIndex(caso => caso.id === id);
     if (index !== -1) {
@@ -82,7 +78,6 @@ function update(id, casoAtualizado) {
     return null;
 }
 
-// Função para atualizar um caso parcialmente (PATCH)
 function patch(id, dadosParciais) {
     const index = casos.findIndex(caso => caso.id === id);
     if (index !== -1) {
@@ -92,7 +87,6 @@ function patch(id, dadosParciais) {
     return null;
 }
 
-// Função para deletar um caso por ID
 function remove(id) {
     const index = casos.findIndex(caso => caso.id === id);
     if (index !== -1) {

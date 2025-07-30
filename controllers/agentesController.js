@@ -22,7 +22,6 @@ function getAllAgentes(req, res) {
             agentes = agentes.filter(agente => agente.cargo.toLowerCase() === cargo.toLowerCase());
         }
         
-        // CORREÇÃO 4: Adicionado filtro por data exata
         if (dataDeIncorporacao) {
             agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao);
         }
@@ -56,7 +55,7 @@ function getAgenteById(req, res) {
     }
 }
 
-// ===== FUNÇÃO CRIAR =====
+// ===== FUNÇÃO POST =====
 function createAgente(req, res) {
     try {
         const { nome, dataDeIncorporacao, cargo } = req.body;
@@ -69,10 +68,9 @@ function createAgente(req, res) {
         } else if (!dateFormat.test(dataDeIncorporacao)) {
             errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
         } else {
-            // CORREÇÃO 1: Bloquear data futura
             const dataIncorp = new Date(dataDeIncorporacao);
             const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+            hoje.setHours(0, 0, 0, 0); 
             if (dataIncorp > hoje) {
                 errors.dataDeIncorporacao = "Data de incorporação não pode ser no futuro.";
             }
@@ -90,7 +88,7 @@ function createAgente(req, res) {
     }
 }
 
-// ===== FUNÇÕES DE ATUALIZAÇÃO =====
+// ===== FUNÇÃO PUT =====
 function updateAgente(req, res) {
     try {
         const { id } = req.params;
@@ -98,7 +96,6 @@ function updateAgente(req, res) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
         }
 
-        // CORREÇÃO 2: Impedir alteração do ID
         if ('id' in req.body) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
@@ -113,7 +110,6 @@ function updateAgente(req, res) {
         } else if (!dateFormat.test(dataDeIncorporacao)) {
             errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
         } else {
-            // CORREÇÃO 1: Bloquear data futura
             const dataIncorp = new Date(dataDeIncorporacao);
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
@@ -142,12 +138,16 @@ function patchAgente(req, res) {
             return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
         }
         
-        // CORREÇÃO 2: Impedir alteração do ID
-        if ('id' in req.body) {
+        const dadosParciais = req.body;
+        
+        if (!dadosParciais || typeof dadosParciais !== 'object' || Array.isArray(dadosParciais) || Object.keys(dadosParciais).length === 0) {
+            return errorHandler.sendInvalidParameterError(res, { body: "Corpo da requisição para atualização parcial (PATCH) está vazio ou em formato inválido." });
+        }
+
+        if ('id' in dadosParciais) {
             return errorHandler.sendInvalidParameterError(res, { id: "Não é permitido alterar o campo 'id'." });
         }
 
-        const dadosParciais = req.body;
         const errors = {};
         const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -155,7 +155,6 @@ function patchAgente(req, res) {
             if (!dateFormat.test(dadosParciais.dataDeIncorporacao)) {
                 errors.dataDeIncorporacao = "Campo 'dataDeIncorporacao' deve seguir a formatação 'YYYY-MM-DD'.";
             } else {
-                // CORREÇÃO 1: Bloquear data futura
                 const dataIncorp = new Date(dadosParciais.dataDeIncorporacao);
                 const hoje = new Date();
                 hoje.setHours(0, 0, 0, 0);
@@ -176,7 +175,7 @@ function patchAgente(req, res) {
     }
 }
 
-// ===== FUNÇÃO DE DELEÇÃO =====
+// ===== FUNÇÃO DELETE =====
 function deleteAgente(req, res) {
     try {
         const { id } = req.params;

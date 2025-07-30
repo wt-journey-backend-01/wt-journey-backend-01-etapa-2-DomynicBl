@@ -1,58 +1,99 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para DomynicBl:
 
 Nota final: **93.4/100**
 
-# Feedback para DomynicBl 🚓✨
+# Feedback para DomynicBl 🚔✨
 
-Olá, Domynic! Primeiro, parabéns pelo esforço e pela estruturação do seu projeto! 🎉 Você conseguiu implementar todos os endpoints obrigatórios para os recursos `/agentes` e `/casos`, com os métodos HTTP essenciais (GET, POST, PUT, PATCH, DELETE). Isso é uma base super sólida para uma API RESTful! Além disso, adorei ver que você organizou seu código em rotas, controladores e repositórios, seguindo a arquitetura modular que a atividade pedia. Isso mostra maturidade no desenvolvimento e facilita muito a manutenção do código. 👏
-
-Também merece destaque que você implementou filtros básicos nos endpoints de casos e agentes, e conseguiu retornar mensagens de erro personalizadas para parâmetros inválidos — isso eleva a qualidade da API e a experiência do cliente que vai consumir seus serviços. Um bônus bem merecido! 🌟
+Oi Domynic! Que legal ver seu projeto da API para o Departamento de Polícia tomando forma! 🚀 Você fez um trabalho muito sólido implementando os recursos principais, e isso já é um baita avanço! 🎉
 
 ---
 
-## O que deu certo e merece aplausos 👏
+## 🎉 Pontos Fortes que Merecem Aplausos
 
-- **Organização do projeto**: seu `server.js` está simples e claro, usando `express.json()` corretamente e importando as rotas separadas (`agentesRouter` e `casosRouter`) — perfeito!  
-- **Endpoints CRUD completos para agentes e casos**: você implementou todos os métodos HTTP esperados e fez as validações necessárias para os campos obrigatórios, formatos e status codes.  
-- **Validação e tratamento de erros**: você usou um `errorHandler` para enviar respostas claras em erros 400, 404 e 500, o que melhora muito a API.  
-- **Filtros implementados**: na listagem de agentes e casos, você fez filtros por cargo, status, agente responsável e busca por texto — isso mostra que você foi além do básico!  
-- **Repositórios em memória**: a manipulação dos arrays está correta, usando `find`, `filter`, `push`, `splice` e atualizações com `findIndex` — está bem feito!  
-- **Swagger**: seus arquivos de rotas têm comentários para documentação, o que é uma ótima prática para APIs.  
+- Seu código está muito bem organizado, seguindo a arquitetura modular com rotas, controllers e repositories. Isso facilita muito a manutenção e escalabilidade do projeto. 👏
+- Os endpoints para os agentes e casos estão implementados para todos os métodos HTTP esperados (GET, POST, PUT, PATCH, DELETE). Isso é essencial e você acertou bem aqui!
+- A validação dos dados está consistente, com mensagens claras e tratamento de erros personalizado, garantindo que o usuário saiba exatamente o que está errado.
+- O uso do middleware para tratamento de erros genéricos no `server.js` é uma ótima prática para capturar exceções inesperadas.
+- Parabéns por implementar filtros simples nos endpoints, como filtragem por `status` e `agente_id` nos casos, e por `cargo` e `dataDeIncorporacao` nos agentes.
+- Você também conseguiu implementar corretamente alguns bônus, como a filtragem por status e agente, o que já mostra seu comprometimento em ir além do básico! 🌟
 
 ---
 
-## Pontos para melhorar — vamos destravar juntos! 🕵️‍♂️🔍
+## 🕵️‍♂️ Pontos para Refinar e Aprimorar (Análise Detalhada)
 
-### 1. Falha na exclusão de agentes que estão associados a casos
+### 1. Sobre a Exclusão de Agentes (DELETE) que não está funcionando corretamente
 
-Você implementou corretamente a lógica para impedir a exclusão de um agente que está associado a casos, retornando erro 400 quando isso acontece. Porém, vi que o teste de deletar um agente está falhando. Ao analisar seu código do controlador `deleteAgente`:
+Você implementou o endpoint de exclusão de agentes no `agentesController.js`:
 
 ```js
-const todosOsCasos = casosRepository.findAll();
-const casosDoAgente = todosOsCasos.some(caso => caso.agente_id === id);
+function deleteAgente(req, res) {
+    try {
+        const { id } = req.params;
+        if (!agentesRepository.findById(id)) {
+            return errorHandler.sendNotFoundError(res, 'Agente não encontrado.');
+        }
 
-if (casosDoAgente) {
-    return errorHandler.sendInvalidParameterError(res, {
-        delecao: 'Não é possível excluir o agente pois ele está associado a casos existentes.'
-    });
+        const todosOsCasos = casosRepository.findAll();
+        const casosDoAgente = todosOsCasos.some(caso => caso.agente_id === id);
+
+        if (casosDoAgente) {
+            return errorHandler.sendInvalidParameterError(res, {
+                delecao: 'Não é possível excluir o agente pois ele está associado a casos existentes.'
+            });
+        }
+
+        agentesRepository.remove(id);
+        res.status(204).send();
+    } catch (error) {
+        errorHandler.sendInternalServerError(res, error);
+    }
 }
 ```
 
-Essa lógica está correta, porém, a falha pode estar relacionada à forma como o `errorHandler.sendInvalidParameterError` está formatando a resposta. Certifique-se de que seu `errorHandler` está retornando o status code 400 e um corpo de erro coerente para esse caso. Se a estrutura da resposta não estiver conforme esperado, o teste pode falhar mesmo com a lógica correta.
+**O que pode estar acontecendo?**
 
-Além disso, é importante garantir que o `casosRepository.findAll()` está retornando o array atualizado de casos, e que o `agente_id` está sendo comparado corretamente (sem espaços ou diferenças de tipo).
+- A lógica está correta para impedir a exclusão caso o agente esteja associado a algum caso.
+- Porém, se o agente não estiver associado, a exclusão deve ocorrer e retornar status 204 sem conteúdo.
+- Se o teste está falhando, pode ser que a função `remove` do `agentesRepository` não esteja removendo corretamente o agente do array em memória, ou que a rota não esteja sendo chamada corretamente.
 
-👉 **Dica:** Verifique seu `errorHandler` para garantir que ele envia status 400 e mensagens no formato esperado. Se quiser, posso ajudar a revisar esse arquivo também!  
+Vamos revisar a função `remove` no `agentesRepository.js`:
+
+```js
+function remove(id) {
+    const index = agentes.findIndex(agente => agente.id === id);
+    if (index !== -1) {
+        agentes.splice(index, 1);
+        return true;
+    }
+    return false;
+}
+```
+
+Está certinha! Ela remove o agente do array.
+
+**Então o que pode estar faltando?**
+
+- Verifique se a rota DELETE está corretamente registrada no `routes/agentesRoutes.js`:
+
+```js
+router.delete('/agentes/:id', agentesController.deleteAgente);
+```
+
+Está tudo correto aqui também.
+
+**Hipótese mais provável:** O problema pode estar relacionado a algum detalhe no teste, ou possivelmente a algum dado de teste que associa o agente a casos, bloqueando a exclusão.
+
+**Sugestão:** Para garantir que a exclusão funcione, teste manualmente com um agente que não esteja associado a nenhum caso. Se a exclusão funcionar, o problema está no dado de teste.
 
 ---
 
-### 2. Atualização parcial (PATCH) de agente com payload em formato incorreto
+### 2. Validação do PATCH para Agentes com Payload Inválido
 
-Você fez uma validação muito boa para o corpo da requisição PATCH, verificando se o corpo é um objeto, não é um array, e não está vazio:
+Você implementou no `agentesController.js` a validação para o PATCH, incluindo verificar se o corpo da requisição está vazio ou mal formatado:
 
 ```js
 if (!dadosParciais || typeof dadosParciais !== 'object' || Array.isArray(dadosParciais) || Object.keys(dadosParciais).length === 0) {
@@ -60,123 +101,163 @@ if (!dadosParciais || typeof dadosParciais !== 'object' || Array.isArray(dadosPa
 }
 ```
 
-Essa abordagem está correta e evita atualizações com payload inválido. Porém, o teste que falha indica que o status 400 não está sendo retornado em algum caso específico. Ao investigar, percebi que no seu repositório `agentesRepository`, o método `patch` retorna `null` se o agente não for encontrado:
+Isso é ótimo! Você está cobrindo o caso de payloads vazios ou malformados.
+
+**Por que o teste pode estar falhando?**
+
+- A função `sendInvalidParameterError` deve retornar status 400 com as mensagens personalizadas.
+- Certifique-se que o `errorHandler.js` está implementando corretamente essa função para enviar o status 400 e o JSON esperado.
+- Também confira se o middleware de tratamento de erros genéricos no `server.js` não está sobrescrevendo essa resposta.
+
+---
+
+### 3. Falha nos Testes Bônus Relacionados a Filtros e Mensagens de Erro Customizadas
+
+Percebi que alguns bônus não passaram, como:
+
+- Busca de agente responsável pelo caso (`GET /casos/:caso_id/agente`)
+- Filtragem por keywords no título e descrição dos casos
+- Filtragem de agentes por data de incorporação com ordenação crescente e decrescente
+- Mensagens de erro customizadas para argumentos inválidos
+
+Você implementou o endpoint para buscar o agente pelo caso no `casosRoutes.js` e `casosController.js`:
 
 ```js
-function patch(id, dadosParciais) {
-    const index = agentes.findIndex(agente => agente.id === id);
-    if (index !== -1) {
-        agentes[index] = { ...agentes[index], ...dadosParciais };
-        return agentes[index];
+router.get('/casos/:caso_id/agente', casosController.getAgenteByCasoId);
+```
+
+```js
+function getAgenteByCasoId(req, res) {
+    try {
+        const { caso_id } = req.params;
+        const caso = casosRepository.findById(caso_id);
+
+        if (!caso) {
+            return errorHandler.sendNotFoundError(res, 'Caso não encontrado.');
+        }
+
+        const agente = agentesRepository.findById(caso.agente_id);
+        if (!agente) {
+            return errorHandler.sendNotFoundError(res, 'Agente associado ao caso não foi encontrado.');
+        }
+
+        res.status(200).json(agente);
+    } catch (error) {
+        errorHandler.sendInternalServerError(res, error);
     }
-    return null;
 }
 ```
 
-Mas no controlador você já verifica se o agente existe antes de chamar `patch`, então esse não é o problema.
+Está muito bem feito! Então, o problema pode ser relacionado a:
 
-O ponto crítico aqui pode estar relacionado a algum caso em que o corpo da requisição é inválido (por exemplo, um array vazio, ou uma string), e a validação do `if` acima não está capturando corretamente, ou o `errorHandler` não está retornando o status correto.
+- A rota estar declarada corretamente, mas não estar sendo usada no `server.js` com o prefixo correto?  
+No `server.js` você fez:
 
-👉 **Sugestão:** Faça um teste manual enviando um PATCH com corpo vazio (`{}`), um array (`[]`) ou um valor não objeto, e veja se a resposta é um 400 com a mensagem correta. Se não for, ajuste a validação para cobrir todos os casos.
+```js
+app.use(agentesRouter);
+app.use(casosRouter);
+```
+
+**Aqui está um ponto importante:** Você registrou as rotas diretamente, sem prefixar os paths. Isso funciona porque você já declarou o caminho completo no router, mas é uma boa prática registrar com prefixos, por exemplo:
+
+```js
+app.use('/agentes', agentesRouter);
+app.use('/casos', casosRouter);
+```
+
+Se você não fez isso, pode causar conflitos ou problemas na resolução das rotas.
+
+**Recomendo fortemente ajustar o `server.js` para:**
+
+```js
+app.use('/agentes', agentesRouter);
+app.use('/casos', casosRouter);
+```
+
+E remover os prefixos nas rotas internas, ou ajustar conforme necessário.
 
 ---
 
-### 3. Filtros avançados e mensagens de erro customizadas — o que falta para o bônus
+### 4. Sobre a Filtragem de Agentes por Data de Incorporação com Ordenação
 
-Você conseguiu implementar filtros básicos nos endpoints, como:
+No seu `agentesController.js`, você implementou o filtro e ordenação:
 
-- Filtrar casos por `status` e `agente_id`  
-- Filtrar agentes por `cargo`  
-
-Porém, alguns filtros e mensagens personalizadas não passaram:
-
-- Busca de agente responsável pelo caso (`GET /casos/:caso_id/agente`) — seu endpoint existe, mas pode estar faltando alguma validação ou detalhe na resposta.  
-- Filtros de casos por keywords no título e descrição — você implementou a busca por texto (`q`), mas talvez não tenha tratado corretamente a validação dos parâmetros ou a ordenação.  
-- Filtragem de agentes por `dataDeIncorporacao` com ordenação crescente e decrescente — você tem um filtro para `dataDeIncorporacao` e ordenação, mas percebi que no seu controlador de agentes você aceita `dataDeIncorporacao` como query param, mas não está validando se o valor está correto antes de filtrar.  
-- Mensagens de erro customizadas para parâmetros inválidos — seu código já retorna erros para parâmetros inválidos, mas talvez o formato ou as mensagens possam ser ajustados para ficar exatamente como o esperado nos critérios bônus.
-
-👉 **Dica para melhorar esses pontos:**
-
-- No filtro de agentes, valide o parâmetro `dataDeIncorporacao` para garantir que ele está no formato `YYYY-MM-DD` antes de filtrar.  
-- Na ordenação, você já faz o parsing do campo, mas pode melhorar a checagem para aceitar apenas `dataDeIncorporacao` ou `-dataDeIncorporacao`.  
-- Para o endpoint que retorna o agente responsável pelo caso, valide se o caso e o agente existem, e retorne mensagens claras de erro 404 se não.  
-- Para as mensagens de erro personalizadas, mantenha o padrão JSON consistente, por exemplo:
-
-```json
-{
-  "errors": {
-    "campo": "mensagem"
-  }
+```js
+if (sort) {
+    const sortField = sort.startsWith('-') ? sort.substring(1) : sort;
+    if (sortField !== 'dataDeIncorporacao') {
+        return errorHandler.sendInvalidParameterError(res, { sort: "Valor inválido. Aceito apenas 'dataDeIncorporacao' ou '-dataDeIncorporacao'." });
+    }
+    const sortOrder = sort.startsWith('-') ? -1 : 1;
+    agentes.sort((a, b) => (new Date(a.dataDeIncorporacao) - new Date(b.dataDeIncorporacao)) * sortOrder);
 }
 ```
 
-Isso melhora a padronização e facilita o consumo da API.  
+Isso está correto e bem implementado! Se o teste está falhando, pode ser que o parâmetro `sort` não esteja sendo passado corretamente ou que a validação de parâmetros esteja bloqueando.
 
----
+Você também valida os parâmetros query para garantir que só `cargo`, `sort` e `dataDeIncorporacao` sejam aceitos:
 
-### 4. Organização do projeto — está tudo no lugar certo! 🎯
+```js
+const allowedParams = ['cargo', 'sort', 'dataDeIncorporacao'];
+const receivedParams = Object.keys(req.query);
+const invalidParams = receivedParams.filter(param => !allowedParams.includes(param));
 
-Sua estrutura de arquivos está perfeita e segue exatamente o que era esperado:
-
-```
-.
-├── controllers/
-│   ├── agentesController.js
-│   └── casosController.js
-├── repositories/
-│   ├── agentesRepository.js
-│   └── casosRepository.js
-├── routes/
-│   ├── agentesRoutes.js
-│   └── casosRoutes.js
-├── utils/
-│   └── errorHandler.js
-├── server.js
-├── package.json
-...
+if (invalidParams.length > 0) {
+    return errorHandler.sendInvalidParameterError(res, { query: `Parâmetros de consulta inválidos: ${invalidParams.join(', ')}.` });
+}
 ```
 
-Isso é um ponto forte, pois facilita a escalabilidade do projeto e a legibilidade do código! 👏
+Verifique se o cliente está enviando apenas esses parâmetros. Caso contrário, o erro será disparado.
 
 ---
 
-## Recomendações de estudos para você seguir evoluindo 📚🚀
+### 5. Mensagens de Erro Customizadas para Argumentos Inválidos
 
-- **Validação e tratamento de erros HTTP (400, 404)**:  
-  [MDN - Status 400 Bad Request](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400)  
-  [MDN - Status 404 Not Found](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404)  
-  Esses artigos vão te ajudar a entender melhor quando e como usar esses status codes e formatar respostas de erro.
+Seu `errorHandler.js` não foi enviado no código, mas você o utiliza em todos os controllers para enviar erros personalizados, como:
 
-- **Express.js e roteamento**:  
-  [Express.js - Guia de Roteamento](https://expressjs.com/pt-br/guide/routing.html)  
-  Para reforçar como organizar rotas e middlewares.
+```js
+return errorHandler.sendInvalidParameterError(res, errors);
+```
 
-- **Validação de dados em APIs Node.js/Express**:  
-  [Vídeo: Validação de dados em APIs Node.js](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_)  
-  Esse vídeo vai te ajudar a estruturar melhor suas validações e mensagens de erro.
+É fundamental que esse módulo implemente corretamente o status HTTP e o formato JSON esperado. Se as mensagens de erro customizadas não estão passando, sugiro revisar esse arquivo para garantir que:
 
-- **Manipulação de arrays em JavaScript**:  
-  [Vídeo: Métodos de Array em JavaScript](https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI)  
-  Para garantir que você está usando os métodos corretos para buscar, filtrar e modificar seus dados em memória.
+- Status 400 seja enviado para erros de validação.
+- Status 404 para recursos não encontrados.
+- O corpo da resposta contenha as mensagens detalhadas que você está passando.
 
 ---
 
-## Resumo rápido dos pontos para focar 🔑
+## 📚 Recomendações de Aprendizado para você brilhar ainda mais!
 
-- [ ] Verifique e ajuste o `errorHandler` para garantir que erros 400 retornem o status e formato corretos, especialmente ao tentar deletar agentes vinculados a casos e ao validar payloads PATCH inválidos.  
-- [ ] Reforce a validação dos parâmetros de filtro, especialmente `dataDeIncorporacao` e `sort` no endpoint de agentes, para garantir que só valores válidos sejam aceitos.  
-- [ ] Ajuste o endpoint `/casos/:caso_id/agente` para garantir que retorna corretamente o agente responsável, com tratamento de erros 404 claros.  
-- [ ] Padronize as mensagens de erro personalizadas para todos os endpoints, mantendo um formato consistente e informativo.  
-- [ ] Teste manualmente os casos de payload inválido (ex: PATCH com array, corpo vazio, campos extras) para garantir que seu código responde com status 400 e mensagens adequadas.
+- Para entender melhor como organizar rotas e usar prefixos no Express, veja a documentação oficial:  
+  https://expressjs.com/pt-br/guide/routing.html
+
+- Para aprofundar na validação de dados e tratamento de erros, recomendo este vídeo que ensina boas práticas em APIs Node.js/Express:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+
+- Se quiser revisar o fluxo de requisição e resposta, e garantir que seus status HTTP estão corretos, este vídeo é top:  
+  https://youtu.be/RSZHvQomeKE
+
+- Para manipulação eficiente de arrays em memória, principalmente para filtros e ordenações, este vídeo é muito útil:  
+  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
 
 ---
 
-Domynic, seu projeto está muito bem encaminhado! Com esses ajustes e reforços nas validações e mensagens, sua API ficará ainda mais robusta e profissional. Continue nesse ritmo e não hesite em explorar os recursos indicados para aprofundar seu conhecimento. Estou aqui torcendo pelo seu sucesso! 🚀💪
+## ✅ Resumo Rápido para Você Focar
 
-Se precisar de mais ajuda, é só chamar! 😉
+- **Confirme se o middleware de rotas no `server.js` está usando prefixos (`/agentes`, `/casos`) para evitar conflitos.**
+- **Teste a exclusão de agentes com dados que não estejam associados a casos para garantir que o método DELETE funciona.**
+- **Revise o `errorHandler.js` para garantir que os status HTTP e as mensagens de erro personalizadas estão sendo enviados corretamente.**
+- **Garanta que o payload enviado em PATCH não esteja vazio ou mal formatado para passar na validação que você já implementou.**
+- **Verifique se os parâmetros query estão sendo passados corretamente para os filtros e ordenações, sem parâmetros extras inválidos.**
 
-Abraços,  
-Seu Code Buddy 🤖❤️
+---
+
+Domynic, seu projeto está muito bem encaminhado! 🚀 Você já domina conceitos importantes como rotas, controllers, validação e tratamento de erros. Com pequenos ajustes e atenção aos detalhes que conversamos, sua API vai ficar redondinha! Continue assim, sempre buscando entender o “porquê” das coisas, e você vai longe! 💪✨
+
+Se precisar de mais ajuda, estou aqui para te apoiar! 😉
+
+Um abraço de Code Buddy! 🤖💙
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
